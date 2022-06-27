@@ -84,17 +84,42 @@ const movies = [
 ];
 
 // Add here the script that will be run to actually seed the database (feel free to refer to the previous lesson)
+
 // ... your code here
-// node ./seeds/movies.seed.js to the terminal to run it
-require("dotenv/config");
-require("../db");
 
-const Movie = require("../models/Movie.model");
+const MovieModel = require("../models/Movie.model.js"); // we require the model that will be used to add elements to our database
 
-Movie.create(movies)
-  .then((moviesFromDB) => {
-    console.log(`Created ${moviesFromDB.length} movies`);
+// below is the exact same database connection setup as our main app 'db/index.js'
+// inside the .then() block we will seed our DB (Once the DB connection is established)
+const mongoose = require("mongoose");
+
+const MONGO_URI =
+  process.env.MONGODB_URI || "mongodb://localhost/lab-express-cinema";
+
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
   })
-  .catch((err) =>
-    console.log(`An error occurred while creating movies from the DB: ${err}`)
-  );
+  .then((x) => {
+    console.log(
+      `Connected to Mongo! Database name: "${x.connections[0].name}"`
+    );
+    // DB connection is established.
+    // using .insertMany() method we add the movies array to the DB
+    MovieModel.insertMany(movies)
+      .then((addedMovies) => {
+        // what happends if the data was added correctly. addedMovies will be the data added.
+        console.log(`${addedMovies.length} movies added to DB`);
+        mongoose.connection
+          .close()
+          .then(() => console.log("Database closed"))
+          .catch((err) => console.log("Error closing DB: ", err));
+      })
+      .catch((err) => console.log("Error seeding the DB: ", err));
+  })
+  .catch((err) => {
+    console.log("Error connecting to mongo: ", err);
+  });
